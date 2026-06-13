@@ -109,41 +109,10 @@ def _sorted_unique_labels(series: pd.Series) -> list:
 
 @st.cache_data
 def load_grades_raw():
-    base = os.path.join(os.path.dirname(__file__), "student_edu_info")
-    with open(os.path.join(base, "grades.json")) as f:
-        raw = json.load(f)
-    rows = []
-    for row in raw:
-        sid, cid, gid = row.get("student_id"), row.get("course_id"), row.get("group_id")
-        for g in row.get("grades", []):
-            g = dict(g)
-            g["student_id"] = sid
-            g["course_id"] = cid
-            g["group_id"] = gid
-            rows.append(g)
-    grades = pd.DataFrame(rows)
-    if grades.empty:
-        return grades
-
-    students = pd.read_csv(os.path.join(base, "students.csv"))
-    groups = pd.read_csv(os.path.join(base, "groups.csv"))
-    courses = pd.read_csv(os.path.join(base, "courses.csv"))
-    valid_sids = set(students["student_id"])
-
-    students_full = (
-        students.merge(
-            groups[["group_id", "group_name", "course_id"]], on="group_id", how="left"
-        ).merge(courses[["course_id", "course_name"]], on="course_id", how="left")
-    )
-
-    df = grades.merge(
-        students_full[["student_id", "group_name", "course_name"]],
-        on="student_id", how="left",
-    )
-    df["score_pct"] = (df["score"] / df["max_score"] * 100).round(1).clip(upper=100)
-    df["date"] = pd.to_datetime(df["date"], errors="coerce")
-    df["orphan"] = ~df["student_id"].isin(valid_sids)
-    return df[df["orphan"] == False].copy()
+    df = read("grades_full")
+    if not df.empty and "date" in df.columns:
+        df["date"] = pd.to_datetime(df["date"], errors="coerce")
+    return df
 
 
 def apply_filters(df, courses, groups):
