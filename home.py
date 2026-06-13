@@ -122,5 +122,3 @@ with col2:
         at_risk_n = int((ss["segment"] == "At-Risk").sum())
         st.caption(f"**{at_risk_n} students** need proactive outreach — not more reports.")
 
-st.divider()
-st.caption("Kayfa · Synthetic dataset · Filters above reshape every KPI on this page.")
