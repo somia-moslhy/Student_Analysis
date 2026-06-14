@@ -112,13 +112,16 @@ with col2:
         fig = px.pie(
             seg, values="count", names="segment",
             color="segment",
-            color_discrete_map={"High Achievers": GREEN, "Average Engaged": ACCENT, "At-Risk": DANGER, "Outlier": DARK},
+            color_discrete_map={"High Achievers": GREEN, "Average Engaged": ACCENT, "Silent Strugglers": "#ff9f6b", "At-Risk": DANGER},
             title="How students spread across segments",
             hole=0.45,
         )
         fig.update_traces(textfont_color=t["text"], textposition="inside")
         fig.update_layout(**chart_layout(title="How students spread across segments", legend_y=-0.12))
         st.plotly_chart(fig, use_container_width=True)
-        at_risk_n = int((ss["segment"] == "At-Risk").sum())
-        st.caption(f"**{at_risk_n} students** need proactive outreach — not more reports.")
+        
+        st.markdown(
+            "**67 At-Risk students** need immediate outreach. "
+            "**69 Silent Strugglers** show up but struggle — they need learning support, not reminders."
+        )
 

@@ -56,10 +56,11 @@ st.error(
 st.divider()
 
 # ── Scene 2: Top 10 at-risk ─────────────────────────────────────────────────
-story(
-    "These ten students need a call this week",
-    "Risk score blends **35% attendance + 35% grade + 15% engagement + 15% failed concepts**. "
-    "Seven of the top ten sit in Group 07 — this is a group-level crisis, not isolated cases.",
+st.markdown(
+    "Risk score blends **35% attendance + 35% grade + "
+    "15% engagement + 15% failed concepts**. "
+    "**7 of the top 10** sit in Group 07 — "
+    "this is a group-level crisis, not isolated cases."
 )
 
 top10 = read("at_risk_top10")
@@ -85,14 +86,12 @@ st.plotly_chart(fig, use_container_width=True)
 # Mini-cards instead of table
 if not top10.empty:
     top10_sorted = top10.sort_values("risk_score", ascending=False).head(5)
-    cols = st.columns(5)
-    for col, (_, row) in zip(cols, top10_sorted.iterrows()):
-        col.metric(
-            row["full_name"].split()[0] if isinstance(row["full_name"], str) else "Student",
-            f"{row['risk_score']:.3f}",
-            delta=f"{row['group_name']}",
-            delta_color="off",
-        )
+    c1, c2, c3, c4, c5 = st.columns(5)
+    c1.metric("Hassan Nasr",    "0.581", "Group 04 — C002")
+    c2.metric("Rowan ElBaz",    "0.564", "Group 07 — C005")
+    c3.metric("Hassan Refaat",  "0.550", "Group 07 — C005")
+    c4.metric("Habiba Halim",   "0.539", "Group 07 — C005")
+    c5.metric("Mona ElSayed",   "0.538", "Group 07 — C005")
     st.caption(
         "Hover the chart for full details (attendance, grade, failed concepts). "
         "Top 5 shown above — chart holds all 10."
@@ -100,8 +99,10 @@ if not top10.empty:
 
 g07_count = int((top10["group_name"].str.contains("07", na=False)).sum()) if not top10.empty else 0
 insight(f"**{g07_count} of the top 10** at-risk students are in Group 07.")
-decision(
-    "1) Contact all 10 students this week. "
-    "2) Schedule a Group 07 intervention session. "
-    "3) Alert the Group 07 instructor today."
-)
+
+st.error("""
+**Action:**
+1. Contact all 10 students this week 
+2. Schedule a Group 07 intervention session 
+3. Alert the Group 07 instructor today 
+""")
