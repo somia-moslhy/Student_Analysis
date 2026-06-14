@@ -105,35 +105,3 @@ decision(
     "2) Schedule a Group 07 intervention session. "
     "3) Alert the Group 07 instructor today."
 )
-
-st.divider()
-
-# ── Scene 3: Filtered at-risk landscape ─────────────────────────────────────
-if not ss.empty and "segment" in ss.columns:
-    story(
-        "The full at-risk picture in your current scope",
-        f"With your filters applied, **{kpi['at_risk_count']} students** fall in the At-Risk segment "
-        f"out of **{kpi['total_students']}** in view.",
-    )
-
-    at_risk = ss[ss["segment"] == "At-Risk"]
-    if not at_risk.empty:
-        fig = px.scatter(
-            at_risk, x="attendance_rate", y="avg_grade",
-            size="failed_concept_count", color="group_name",
-            hover_data=["full_name", "login_count", "risk_score"],
-            title="At-risk students in scope — where they sit",
-            labels={
-                "attendance_rate": "Attendance (%)",
-                "avg_grade": "Avg Grade (%)",
-                "failed_concept_count": "Failed Concepts",
-            },
-            opacity=0.85,
-        )
-        fig.update_layout(**chart_layout(title="At-risk students in scope — where they sit", legend_y=-0.15))
-        st.plotly_chart(fig, use_container_width=True)
-
-        decision(
-            f"Prioritise the {kpi['at_risk_count']} at-risk students visible under current filters — "
-            "start with lowest attendance × lowest grade quadrant."
-        )
