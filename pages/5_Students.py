@@ -32,14 +32,15 @@ story(
 )
 
 if not ss.empty:
-    age_g = ss.groupby("age_group", observed=True).agg(
+    valid_age = ss[~ss["age_group"].isin([0, "0"])]
+    age_g = valid_age.groupby("age_group", observed=True).agg(
         avg_grade=("avg_grade", "mean"),
         attendance_rate=("attendance_rate", "mean"),
         count=("student_id", "count"),
     ).reset_index().round(1)
 
-    video_max = ss["total_video_mins"].max() or 1
-    age_video = ss.groupby("age_group", observed=True)["total_video_mins"].mean().reset_index()
+    video_max = valid_age["total_video_mins"].max() or 1
+    age_video = valid_age.groupby("age_group", observed=True)["total_video_mins"].mean().reset_index()
     age_video["video_pct"] = (age_video["total_video_mins"] / video_max * 100).round(1)
     age_g = age_g.merge(age_video[["age_group", "video_pct"]], on="age_group")
 
