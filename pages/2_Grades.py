@@ -60,6 +60,8 @@ for _, row in type_summary.iterrows():
         textfont=dict(size=12, color=t["text"]),
         showlegend=False,
     ))
+    scores_max = grades_clean.groupby("type")["score_pct"].max()[row["type"]]
+    fig.data[-1].y = [scores_max + 2]
 fig.update_layout(**chart_layout(title="Score spread by assessment type — assignments carry the most risk"), showlegend=False)
 st.plotly_chart(fig, use_container_width=True)
 

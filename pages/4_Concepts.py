@@ -43,7 +43,7 @@ fig = px.bar(
 )
 fig.update_traces(texttemplate="%{text}%", textposition="outside", textfont_color=t["text"])
 fig.update_xaxes(range=[0, 80])
-fig.update_layout(**chart_layout(title="Concept failure landscape — one concept dominates the risk"))
+fig.update_layout(**chart_layout(title="Concept failure landscape — one concept dominates the risk", height=600))
 st.plotly_chart(fig, use_container_width=True)
 
 st.error(
