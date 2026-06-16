@@ -31,24 +31,115 @@ story(
     "No meaningful group learning can happen at that scale.",
 )
 
+if not ss.empty and "group_name" in ss.columns:
+    group_counts = ss[ss["group_name"] != 0]["group_name"].value_counts().reset_index()
+    group_counts.columns = ["group_name", "count"]
+    group_counts = group_counts.sort_values("count", ascending=True)
+
+    colors = [DANGER if "10" in str(g) else DARK for g in group_counts["group_name"]]
+
+    fig = px.bar(
+        group_counts, x="count", y="group_name", orientation="h",
+        text="count",
+        title="Enrolled students per group — G10 is empty",
+        labels={"group_name": "", "count": "Enrolled Students"},
+    )
+    fig.update_traces(marker_color=colors, textposition="outside")
+    fig.update_layout(**chart_layout(title="Enrolled students per group — G10 is empty"))
+    st.plotly_chart(fig, use_container_width=True)
+
 c1, c2 = st.columns(2)
 with c1:
     if not ss.empty and "group_name" in ss.columns:
-        group_counts = ss[ss["group_name"] != 0]["group_name"].value_counts().reset_index()
-        group_counts.columns = ["group_name", "count"]
-        group_counts = group_counts.sort_values("count", ascending=True)
 
-        colors = [DANGER if "10" in str(g) else DARK for g in group_counts["group_name"]]
+        # Step 1 — filter phantom groups
+        ss_filtered = ss[
+            ~ss["group_name"].isin([0, "0", pd.NA, None, ""])
+        ].copy()
+        ss_filtered["group_name"] = ss_filtered["group_name"].astype(str)
 
-        fig = px.bar(
-            group_counts, x="count", y="group_name", orientation="h",
-            text="count",
-            title="Enrolled students per group — G10 is empty",
-            labels={"group_name": "", "count": "Enrolled Students"},
+        # Step 2 — isolate G10 student and extract course + avg_grade
+        g10_mask = ss_filtered["group_name"].str.contains("10", na=False)
+        student_g10 = ss_filtered[g10_mask]
+
+        if not student_g10.empty and "avg_grade" in ss_filtered.columns:
+            g10_course     = student_g10["course_name"].iloc[0]
+            g10_avg_grade  = student_g10["avg_grade"].iloc[0]
+
+            # Step 3 — group all OTHER groups by group_name + course_name → mean avg_grade
+            other_groups = ss_filtered[~g10_mask]
+            group_perf = (
+                other_groups
+                .groupby(["group_name", "course_name"], as_index=False)["avg_grade"]
+                .mean()
+                .rename(columns={"avg_grade": "mean_avg_grade"})
+            )
+
+            # Step 4 — absolute difference vs G10 student's avg_grade
+            group_perf["diff"] = (
+                group_perf["mean_avg_grade"] - g10_avg_grade
+            ).abs().round(1)
+
+            # Step 5 — display_name: tag same-course groups
+            group_perf["is_same_course"] = (
+                group_perf["course_name"] == g10_course
+            )
+            group_perf["display_name"] = group_perf.apply(
+                lambda r: f"{r['group_name']} (Same Course)"
+                          if r["is_same_course"]
+                          else r["group_name"],
+                axis=1,
+            )
+
+            # Step 6 — sort: same-course first, then smallest diff
+            # ascending=[False, True] → same-course=True floats up,
+            # and within that block smallest diff is last → sits at BOTTOM of hbar
+            group_perf = group_perf.sort_values(
+                by=["is_same_course", "diff"],
+                ascending=[False, False],   # same-course block at top of df = bottom of hbar
+            )
+
+            # Step 8 — color: ACCENT for G09, DARK for everyone else
+            colors = [
+                ACCENT if "09" in str(g) else DARK
+                for g in group_perf["group_name"]
+            ]
+
+            # Steps 7, 9, 10 — build the chart
+            fig_dist = px.bar(
+                group_perf,
+                x="diff",
+                y="display_name",
+                orientation="h",
+                text="diff",
+                title="Evidence: G09 is the closest match in Performance Level",
+                labels={
+                    "display_name": "",
+                    "diff": "Difference in Average Grade (%)",
+                },
+            )
+            fig_dist.update_traces(
+                marker_color=colors,
+                texttemplate="%{text:.1f}",
+                textposition="outside",
+            )
+            fig_dist.update_layout(
+                **chart_layout(
+                    title="Evidence: G09 is the closest match in Performance Level"
+                )
+            )
+            st.plotly_chart(fig_dist, use_container_width=True)
+
+        else:
+            st.info(
+                "Chart could not be generated — "
+                "Group 10 data or avg_grade column is missing."
+            )
+    else:
+        st.info(
+            "Chart could not be generated — "
+            "student summary data is missing."
         )
-        fig.update_traces(marker_color=colors, textposition="outside")
-        fig.update_layout(**chart_layout(title="Enrolled students per group — G10 is empty"))
-        st.plotly_chart(fig, use_container_width=True)
 
 with c2:
     if not ss.empty and "group_name" in ss.columns:
