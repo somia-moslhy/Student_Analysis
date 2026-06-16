@@ -86,12 +86,14 @@ st.plotly_chart(fig, use_container_width=True)
 # Mini-cards instead of table
 if not top10.empty:
     top10_sorted = top10.sort_values("risk_score", ascending=False).head(5)
-    c1, c2, c3, c4, c5 = st.columns(5)
-    c1.metric("Hassan Nasr",    "0.581", "Group 04 — C002")
-    c2.metric("Rowan ElBaz",    "0.564", "Group 07 — C005")
-    c3.metric("Hassan Refaat",  "0.550", "Group 07 — C005")
-    c4.metric("Habiba Halim",   "0.539", "Group 07 — C005")
-    c5.metric("Mona ElSayed",   "0.538", "Group 07 — C005")
+    cols = st.columns(5)
+    for col, (_, row) in zip(cols, top10_sorted.iterrows()):
+        col.metric(
+            label=row["full_name"],
+            value=row["group_name"],
+            delta=f'{row["risk_score"]:.3f}',
+            delta_color="inverse",
+        )
     st.caption(
         "Hover the chart for full details (attendance, grade, failed concepts). "
         "Top 5 shown above — chart holds all 10."

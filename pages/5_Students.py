@@ -3,6 +3,8 @@ import sys
 
 import pandas as pd
 import plotly.express as px
+from sklearn.cluster import KMeans
+from sklearn.preprocessing import StandardScaler
 import streamlit as st
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -73,49 +75,100 @@ story(
     "Bubble size reflects failed concepts — At-Risk students carry the heaviest load.",
 )
 
-if not ss.empty and "segment" in ss.columns:
-    segment_map = {
-        "High Achievers":    GREEN,
-        "Average Engaged":   ACCENT,
-        "Silent Strugglers": "#ff9f6b",
-        "At-Risk":           DANGER,
+if not ss.empty:
+    # Perform clustering dynamically
+    cluster_features = ['attendance_rate', 'avg_grade', 'login_count',
+                        'total_video_mins', 'failed_concept_count']
+    # Ensure all features are present, fill with 0 if not.
+    for feature in cluster_features:
+        if feature not in ss.columns:
+            ss[feature] = 0
+
+    X = ss[cluster_features].fillna(0)
+    scaler = StandardScaler()
+    X_scaled = scaler.fit_transform(X)
+
+    kmeans = KMeans(n_clusters=4, random_state=42, n_init=10)
+    ss['cluster'] = kmeans.fit_predict(X_scaled)
+
+    # Dynamically label clusters based on their characteristics
+    means = ss.groupby('cluster')[['avg_grade', 'attendance_rate']].mean()
+    means = means.sort_values(by='avg_grade', ascending=False)
+    cluster_ids_by_grade = means.index.tolist()
+
+    high_achievers_idx = cluster_ids_by_grade[0]
+    at_risk_idx = cluster_ids_by_grade[3]
+    mid_idx_1, mid_idx_2 = cluster_ids_by_grade[1], cluster_ids_by_grade[2]
+
+    # Differentiate middle clusters by attendance
+    if means.loc[mid_idx_1, 'attendance_rate'] > means.loc[mid_idx_2, 'attendance_rate']:
+        silent_strugglers_idx, avg_engaged_idx = mid_idx_1, mid_idx_2
+    else:
+        silent_strugglers_idx, avg_engaged_idx = mid_idx_2, mid_idx_1
+
+    label_map = {
+        high_achievers_idx: 'High Achievers',
+        avg_engaged_idx: 'Average Engaged',
+        silent_strugglers_idx: 'Silent Strugglers',
+        at_risk_idx: 'At-Risk'
+    }
+    ss['segment'] = ss['cluster'].map(label_map)
+
+    segment_order = ['High Achievers', 'Average Engaged', 'Silent Strugglers', 'At-Risk']
+    ss['segment'] = pd.Categorical(ss['segment'], categories=segment_order, ordered=True)
+
+    COLOR_MAP = {
+        'High Achievers': GREEN,
+        'Average Engaged': ACCENT,
+        'Silent Strugglers': '#ff7f0e',
+        'At-Risk': DANGER
     }
 
     fig = px.scatter(
-        ss, x="attendance_rate", y="avg_grade",
-        color="segment", size="failed_concept_count", size_max=20,
+        ss.sort_values('segment'),
+        x='attendance_rate', y='avg_grade',
+        color='segment', size='failed_concept_count',
+        size_max=25,
         hover_data=["full_name", "group_name", "login_count", "total_video_mins"],
-        color_discrete_map=segment_map,
-        title="Student landscape — four clusters, one danger zone",
+        color_discrete_map=COLOR_MAP,
+        facet_col='segment',
+        title='Student Segmentation: Behavior Breakdown',
         labels={
-            "attendance_rate": "Attendance (%)",
-            "avg_grade": "Avg Grade (%)",
-            "segment": "Segment",
-            "failed_concept_count": "Failed Concepts",
+            'attendance_rate': 'Attendance (%)', 'avg_grade': 'Avg Grade (%)',
+            'segment': 'Segment', 'failed_concept_count': 'Failed Concepts',
         },
         opacity=0.8,
     )
-    fig.update_layout(**chart_layout(title="Student landscape — four clusters, one danger zone"))
+    fig.for_each_annotation(lambda a: a.update(text=a.text.split("=")[-1]))
+    fig.update_traces(marker=dict(line=dict(width=1, color='DarkSlateGrey')))
+    fig.update_layout(showlegend=False, title_x=0.5)
     st.plotly_chart(fig, use_container_width=True)
 
-    c1, c2, c3, c4 = st.columns(4)
+    # Dynamically calculate and display metrics and insights
+    stats_list = []
+    for segment in segment_order:
+        segment_df = ss[ss['segment'] == segment]
+        if not segment_df.empty:
+            stats_list.append({
+                "segment": segment, "count": len(segment_df),
+                "avg_grade": segment_df['avg_grade'].mean(),
+            })
 
-    c1.metric("High Achievers",    "192", "avg 76.3%")
-    c2.metric("Average Engaged",   "172", "avg 71.3%")
-    c3.metric("Silent Strugglers", "69", "avg 64.1%")
-    c4.metric("At-Risk",           "67", "avg 58.4%")
-    
-    st.info("""
-**4 segments — Real numbers:**
-- **High Achievers** (192 students): 84.4% attendance, 76.3% grade, 0.6 failed concepts
-- **Average Engaged** (172 students): 73.3% attendance, 71.3% grade, 0.7 failed concepts
-- **Silent Strugglers** (69 students): 80.3% attendance, 64.1% grade, 3.3 failed concepts
-  — They attend regularly but struggle to understand. They need learning support, not attendance reminders
-- **At-Risk** (67 students): 60.5% attendance, 58.4% grade, 3.3 failed concepts
-  — They don't attend and struggle — highest priority
+    if stats_list:
+        cols = st.columns(len(stats_list))
+        for col, stat in zip(cols, stats_list):
+            col.metric(label=stat["segment"], value=stat["count"], delta=f"avg {stat['avg_grade']:.1f}%")
 
-**Action:** Start with the 67 At-Risk students immediately. Then apply learning intervention for the 69 Silent Strugglers.
-""")
+        at_risk_count = next((s['count'] for s in stats_list if s['segment'] == 'At-Risk'), 0)
+        silent_strugglers_count = next((s['count'] for s in stats_list if s['segment'] == 'Silent Strugglers'), 0)
+        insight(
+            f"Clustering reveals **{at_risk_count} At-Risk** students (low attendance & grade) and "
+            f"**{silent_strugglers_count} Silent Strugglers** (high attendance, low grade)."
+        )
+        decision(
+            "Prioritize outreach to the At-Risk group. "
+            "Deploy targeted learning support, not attendance nudges, for the Silent Strugglers."
+        )
 
 st.divider()
 

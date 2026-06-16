@@ -44,13 +44,13 @@ fig = px.bar(
 )
 fig.update_traces(texttemplate="%{text}%", textposition="outside", textfont_color=t["text"])
 fig.update_xaxes(range=[0, 105])
-fig.add_trace(go.Scatter(
-    x=[platform_avg] * len(g_att), y=g_att["group_name"],
-    mode="lines",
-    line=dict(dash="dash", color=DANGER, width=2),
-    hovertemplate=f"Platform avg: {platform_avg}%<extra></extra>",
-    showlegend=False,
-))
+fig.add_vline(
+    x=platform_avg,
+    line_dash="dash", line_color=DANGER, line_width=2,
+    annotation_text=f"Platform avg: {platform_avg}%",
+    annotation_position="bottom right",
+    annotation_font_color=DANGER,
+)
 fig.update_layout(**chart_layout(title="Attendance across groups — one line tells the average story"), showlegend=False)
 st.plotly_chart(fig, use_container_width=True)
 

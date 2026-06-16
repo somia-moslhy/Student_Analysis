@@ -34,6 +34,7 @@ story(
 )
 
 if not filtered_ss.empty:
+    filtered_ss = filtered_ss[~filtered_ss["course_name"].isin([0, "0", ""])]
     corr_val = filtered_ss[["attendance_rate", "avg_grade"]].corr().iloc[0, 1]
 
     c1, c2 = st.columns(2)
@@ -41,13 +42,13 @@ if not filtered_ss.empty:
         fig = px.scatter(
             filtered_ss, x="attendance_rate", y="avg_grade",
             color="course_name", trendline="ols", trendline_scope="overall",
-            title=f"Attendance vs grade — a weak link (r = {corr_val:.3f})",
+            title="Attendance vs grade — a weak link",
             labels={"attendance_rate": "Attendance (%)", "avg_grade": "Avg Grade (%)", "course_name": "Course"},
             opacity=0.7,
             color_discrete_sequence=px.colors.qualitative.Pastel,
         )
         fig.update_traces(line=dict(color=DARK, width=4), selector=dict(mode="lines"))
-        fig.update_layout(**chart_layout(title=f"Attendance vs grade — a weak link (r = {corr_val:.3f})"))
+        fig.update_layout(**chart_layout(title="Attendance vs grade — a weak link"))
         st.plotly_chart(fig, use_container_width=True)
 
     with c2:
@@ -94,7 +95,7 @@ if not filtered_ss.empty:
     st.plotly_chart(fig, use_container_width=True)
 
     insight(
-        "Attendance explains only ~5% of grade variance. "
+        "Attendance shows a very weak link to grades. "
         "High-attendance students are scattered across all grade bands — presence ≠ performance."
     )
     decision(
@@ -122,12 +123,12 @@ if not filtered_ss.empty:
             color="attendance_rate",
             color_continuous_scale=[[0, DANGER], [0.5, ACCENT], [1, GREEN]],
             trendline="ols",
-            title=f"Video watch time vs grade (r = {r_video:.3f})",
+            title="Video watch time vs grade",
             labels={"total_video_mins": "Video Watch (mins)", "avg_grade": "Avg Grade (%)", "attendance_rate": "Attendance %"},
             opacity=0.7,
         )
         fig.update_traces(line=dict(color=DARK, width=3), selector=dict(mode="lines"))
-        fig.update_layout(**chart_layout(title=f"Video watch time vs grade (r = {r_video:.3f})"))
+        fig.update_layout(**chart_layout(title="Video watch time vs grade"))
         st.plotly_chart(fig, use_container_width=True)
 
     with c2:
@@ -136,15 +137,15 @@ if not filtered_ss.empty:
             color="total_video_mins",
             color_continuous_scale=[[0, ACCENT], [1, DARK]],
             trendline="ols",
-            title=f"Login frequency vs grade (r = {r_login:.3f})",
+            title="Login frequency vs grade",
             labels={"login_count": "Login Count", "avg_grade": "Avg Grade (%)", "total_video_mins": "Video Mins"},
             opacity=0.7,
         )
         fig.update_traces(line=dict(color=DANGER, width=3), selector=dict(mode="lines"))
-        fig.update_layout(**chart_layout(title=f"Login frequency vs grade (r = {r_login:.3f})"))
+        fig.update_layout(**chart_layout(title="Login frequency vs grade"))
         st.plotly_chart(fig, use_container_width=True)
 
-    insight("Video time (r ≈ 0.41) and logins (r ≈ 0.38) both correlate moderately with grade.")
+    insight("Video time and logins both show a moderate link with grades.")
     decision("Track weekly video completion as an early-warning engagement metric.")
 
 st.divider()
@@ -202,7 +203,6 @@ with c2:
         category_orders={"timing_category": labels},
         color_discrete_sequence=[DANGER, "#FFA15A", GREEN, ACCENT],
     )
-    fig.update_traces(boxmean="sd")
     fig.update_layout(**chart_layout(title="The penalty of rushing — score by submission behaviour"), showlegend=False)
     st.plotly_chart(fig, use_container_width=True)
 

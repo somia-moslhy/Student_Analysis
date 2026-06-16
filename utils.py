@@ -166,7 +166,7 @@ def filter_context():
 def sidebar():
     st.sidebar.image("kayfa_logo.png", use_container_width=True)
     st.sidebar.markdown("---")
-    st.sidebar.caption("Kayfa · AI & Data Analytics · Student Story Dashboard")
+    st.sidebar.caption("Kayfa · AI & Data Analytics · Student Story Dashboard\n\n**Week 2 Task 2**")
 
 
 def page_header(title, subtitle):

@@ -54,16 +54,16 @@ for _, row in type_summary.iterrows():
     fig.add_trace(go.Scatter(
         x=[row["type"]], y=[row["mean"]],
         mode="markers+text",
-        marker=dict(symbol="diamond", size=12, color=t["text"]),
+        marker=dict(symbol="line-ew", size=40, color=DANGER, line=dict(width=4, color=DANGER)),
         text=[f"avg {row['mean']:.1f}%"],
         textposition="top center",
-        textfont=dict(size=10, color=t["text"]),
+        textfont=dict(size=12, color=t["text"]),
         showlegend=False,
     ))
 fig.update_layout(**chart_layout(title="Score spread by assessment type — assignments carry the most risk"), showlegend=False)
 st.plotly_chart(fig, use_container_width=True)
 
-insight("Assignments average **65.3%** with the highest spread (std ≈ 12.9). Other types are stable.")
+insight("Assignments average **65.3%** with the highest spread. Other types are stable.")
 decision("Add mid-assignment check-ins and automated deadline reminders for take-home work.")
 
 st.divider()
@@ -71,12 +71,12 @@ st.divider()
 # ── Scene 2 ───────────────────────────────────────────────────────────────
 story(
     "Digital Marketing is the course that needs attention",
-    "Most courses sit in a tight band. **Digital Marketing** breaks away — lower average and wider spread.",
+    "Most courses sit in a tight band. **Digital Marketing** breaks away with a lower average score.",
 )
 
 course_grades = (
     grades_clean.groupby("course_name")["score_pct"]
-    .agg(avg="mean", std="std", count="count").reset_index().round(1)
+    .agg(avg="mean").reset_index().round(1)
     .sort_values("avg", ascending=True)
 )
 
@@ -84,25 +84,17 @@ fig = go.Figure()
 fig.add_trace(go.Bar(
     y=course_grades["course_name"], x=course_grades["avg"], orientation="h",
     name="Avg Grade (%)", marker_color=ACCENT,
-    text=[f"{v}%  n={int(c)}" for v, c in zip(course_grades["avg"], course_grades["count"])],
+    text=[f"{v}%" for v in course_grades["avg"]],
     textposition="outside", textfont=dict(color=t["text"], size=11),
-))
-fig.add_trace(go.Bar(
-    y=course_grades["course_name"], x=course_grades["std"], orientation="h",
-    name="Spread / Std Dev (%)", marker_color=DANGER, opacity=0.6,
-    text=[f"±{v}%" for v in course_grades["std"]],
-    textposition="outside", textfont=dict(color=t["text"], size=10),
 ))
 fig.update_xaxes(range=[0, 110], title="Score (%)")
 fig.update_layout(
-    **chart_layout(title="Course performance — average vs consistency", legend_y=-0.18),
-    barmode="group",
+    **chart_layout(title="Course performance — average scores", legend_y=-0.18),
 )
 st.plotly_chart(fig, use_container_width=True)
 
 insight(
-    "Digital Marketing at **59.1%** is ~13 pp below the next course. "
-    "Cybersecurity has too few records to trust."
+    "Digital Marketing at **59.1%** is ~13 pp below the next course."
 )
 decision("Launch an immediate curriculum review for Digital Marketing.")
 

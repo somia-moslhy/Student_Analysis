@@ -17,7 +17,7 @@ sidebar()
 ss, kpi, _, _ = filter_context()
 
 page_header(
-    "Executive Brief",
+    "Week 2 Task 2 Student analysis",
     "*A one-page story of what the data is telling us — and what leadership should do next.*",
 )
 
@@ -94,13 +94,13 @@ with col1:
     )
     fig.update_traces(texttemplate="%{text}%", textposition="outside", textfont_color=t["text"])
     fig.update_xaxes(range=[0, 105])
-    fig.add_trace(go.Scatter(
-        x=[platform_avg] * len(g_att), y=g_att["group_name"],
-        mode="lines",
-        line=dict(dash="dash", color=DANGER, width=2),
-        hovertemplate=f"Platform avg: {platform_avg}%<extra></extra>",
-        showlegend=False,
-    ))
+    fig.add_vline(
+        x=platform_avg,
+        line_dash="dash", line_color=DANGER, line_width=2,
+        annotation_text=f"Platform avg: {platform_avg}%",
+        annotation_position="bottom right",
+        annotation_font_color=DANGER,
+    )
     fig.update_layout(**chart_layout(title="Every group’s attendance story"), showlegend=False)
     st.plotly_chart(fig, use_container_width=True)
     st.caption("Group 07 stands alone below the dashed platform average.")
@@ -124,4 +124,3 @@ with col2:
             "**67 At-Risk students** need immediate outreach. "
             "**69 Silent Strugglers** show up but struggle — they need learning support, not reminders."
         )
-
